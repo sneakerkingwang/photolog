@@ -124,14 +124,14 @@
                     if (!ImageModule) throw new Error("ImageModule library failed to load.");
 
                     const imageOptions = {
-                        centered: false,
+                        centered: true,
                         getImage: (v) => {
                             const bin = window.atob(v);
                             const res = new Uint8Array(bin.length);
                             for (let i = 0; i < bin.length; i++) res[i] = bin.charCodeAt(i);
                             return res.buffer;
                         },
-                        getSize: () => [300, 225]
+                        getSize: () => [500, 375]
                     };
 
                     const doc = new window.docxtemplater(zip, {
