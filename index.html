@@ -4,45 +4,50 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GSI Photo Log Generator</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/docxtemplater/3.45.0/docxtemplater.js"></script>
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pizzip/3.1.4/pizzip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/docxtemplater/3.45.0/docxtemplater.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    
     <script src="https://unpkg.com/docxtemplater-image-module-free@1.1.1/build/converter-wrapper.js"></script>
     <script src="https://unpkg.com/docxtemplater-image-module-free@1.1.1/build/imagetemplater.js"></script>
 
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; max-width: 800px; margin: 40px auto; line-height: 1.6; padding: 0 20px; background-color: #f4f7f9; }
-        h1 { color: #333; }
+        body { font-family: -apple-system, sans-serif; max-width: 800px; margin: 40px auto; line-height: 1.6; padding: 0 20px; background-color: #f4f7f9; }
+        h1 { color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
         .section { background: white; border: 1px solid #dfe3e8; padding: 25px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .photo-entry { background: #f9f9f9; padding: 15px; margin-bottom: 10px; border-radius: 6px; border-left: 4px solid #007bff; }
-        input[type="text"] { padding: 8px; border: 1px solid #ccc; border-radius: 4px; margin-right: 10px; }
+        input[type="text"] { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 60%; margin-bottom: 5px; }
         select { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
-        button { background: #007bff; color: white; border: none; padding: 12px 24px; border-radius: 4px; cursor: pointer; font-weight: 600; width: 100%; font-size: 16px; }
+        button { background: #007bff; color: white; border: none; padding: 15px; border-radius: 4px; cursor: pointer; font-weight: 600; width: 100%; font-size: 16px; transition: 0.2s; }
         button:hover { background: #0056b3; }
+        code { background: #eee; padding: 2px 4px; border-radius: 4px; }
     </style>
 </head>
 <body>
 
-    <h1>Photo Log Generator</h1>
+    <h1>GSI Photo Log Generator</h1>
     <p>Project: <strong>Nucor Steel Texas, Jewett</strong></p>
 
     <div class="section">
-        <h3>1. Upload Template</h3>
-        <p>Select your <code>.docx</code> file (e.g., 10931_CAMU_Photo_Log_Template)</p>
+        <h3>1. Template Upload</h3>
+        <p>Select your <code>.docx</code> template file.</p>
         <input type="file" id="template" accept=".docx">
     </div>
 
     <div class="section">
-        <h3>2. Upload Photos</h3>
+        <h3>2. Image Upload</h3>
+        <p>Select multiple site photos to include in the log.</p>
         <input type="file" id="photos" multiple accept="image/*" onchange="renderPhotoInputs()">
         <div id="photo-list" style="margin-top: 20px;"></div>
     </div>
 
-    <button onclick="generateDocument()">Generate & Download Log</button>
+    <button onclick="generateDocument()">Generate & Download Photo Log</button>
 
     <script>
         let photoData = [];
 
+        // Function to create input fields for each uploaded photo
         function renderPhotoInputs() {
             const files = document.getElementById('photos').files;
             const container = document.getElementById('photo-list');
@@ -60,8 +65,8 @@
                     const div = document.createElement('div');
                     div.className = 'photo-entry';
                     div.innerHTML = `
-                        <strong>Photo ${index + 1}: ${file.name}</strong><br><br>
-                        <input type="text" placeholder="Description (e.g. Small patches lacking vegetation)" id="desc-${index}" style="width:65%">
+                        <strong>${file.name}</strong><br>
+                        <input type="text" placeholder="Description (e.g. Observed patches lacking vegetation)" id="desc-${index}">
                         <select id="dir-${index}">
                             <option value="North">North</option>
                             <option value="South">South</option>
@@ -76,24 +81,26 @@
             });
         }
 
+        // Main function to generate the Word Doc
         async function generateDocument() {
             const templateFile = document.getElementById('template').files[0];
-            if (!templateFile) return alert("Please upload a template first.");
+            if (!templateFile) return alert("Please upload a template file first.");
+            if (photoData.length === 0) return alert("Please upload at least one photo.");
 
             const reader = new FileReader();
             reader.onload = function(e) {
                 try {
                     const content = e.target.result;
-                    const zip = new PizZip(content);
+                    const zip = new window.PizZip(content);
                     
-                    // Simple Image Module Config
+                    // Image Module Configuration
                     const imageOptions = {
                         centered: false,
                         getImage(tagValue) {
                             return Uint8Array.from(atob(tagValue), c => c.charCodeAt(0));
                         },
                         getSize() {
-                            return [300, 225]; // Adjust image size here
+                            return [300, 225]; // Width and Height in pixels for the Word Doc
                         }
                     };
                     const imageModule = new window.ImageModule(imageOptions);
@@ -104,10 +111,10 @@
                         linebreaks: true
                     });
 
-                    // Match your template tags
+                    // Mapping photos to the {photos} loop in your Word Doc
                     const photoEntries = photoData.map((photo, i) => ({
                         image: photo.base64,
-                        caption: document.getElementById(`desc-${i}`).value,
+                        caption: document.getElementById(`desc-${i}`).value || "No description provided.",
                         direction: document.getElementById(`dir-${i}`).value
                     }));
 
@@ -118,10 +125,11 @@
                         mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                     });
                     
-                    saveAs(out, "10931_CAMU_Photo_Log_Final.docx");
+                    // Specific filename for GSI project 10931 
+                    saveAs(out, "10931_CAMU_Photo_Log_Generated.docx");
                 } catch (error) {
                     console.error(error);
-                    alert("Error: " + error.message);
+                    alert("An error occurred: " + error.message);
                 }
             };
             reader.readAsArrayBuffer(templateFile);
