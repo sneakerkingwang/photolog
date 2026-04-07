@@ -5,7 +5,9 @@
     <title>Photo Log Generator</title>
     
     <script src="https://cdn.jsdelivr.net/npm/pizzip@3.1.4/dist/pizzip.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/docxtemplater@3.45.0/build/docxtemplater.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/docxtemplater@3.29.4/build/docxtemplater.js"></script>
+    
     <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
     
     <script src="https://cdn.jsdelivr.net/npm/@slosarek/docxtemplater-image-module-free@1.2.0/build/imagemodule.js"></script>
@@ -102,7 +104,7 @@
                 try {
                     const zip = new window.PizZip(e.target.result);
 
-                    const ImageModule = window.ImageModule;
+                    const ImageModule = window.ImageModule || window.docxtemplaterImageModule;
                     if (!ImageModule) throw new Error("ImageModule library failed to load.");
 
                     const imageOptions = {
