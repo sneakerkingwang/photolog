@@ -2,122 +2,113 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Photo Log Generator</title>
-    
+    <title>Professional Photo Log Generator</title>
     <script src="https://unpkg.com/pizzip@3.1.4/dist/pizzip.js"></script>
     <script src="https://unpkg.com/docxtemplater@3.45.0/build/docxtemplater.js"></script>
     <script src="https://unpkg.com/file-saver@2.0.5/dist/FileSaver.min.js"></script>
     <script src="https://unpkg.com/docxtemplater-image-module-free@1.1.1/build/imagetemplater.js"></script>
-
     <style>
-        body { font-family: -apple-system, sans-serif; max-width: 800px; margin: 40px auto; padding: 0 20px; background-color: #f4f7f9; color: #333; }
-        .section { background: white; border: 1px solid #dfe3e8; padding: 25px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .photo-entry { background: #f9f9f9; padding: 15px; margin-bottom: 10px; border-radius: 6px; border-left: 4px solid #007bff; position: relative; }
-        .controls { margin-bottom: 10px; }
-        .controls button { width: auto; padding: 5px 10px; margin-right: 5px; background: #6c757d; font-size: 12px; }
-        input[type="text"] { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 60%; margin-bottom: 5px; }
-        select { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 35%; }
-        button { background: #007bff; color: white; border: none; padding: 15px; border-radius: 4px; cursor: pointer; width: 100%; font-size: 16px; font-weight: bold; }
-        button:hover { background: #0056b3; }
+        body { font-family: -apple-system, sans-serif; max-width: 850px; margin: 40px auto; padding: 20px; background-color: #f4f7f9; }
+        .card { background: white; border: 1px solid #dfe3e8; padding: 25px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .photo-entry { background: #fff; border-left: 5px solid #007bff; padding: 15px; margin-bottom: 12px; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .controls { display: flex; gap: 8px; margin-bottom: 10px; }
+        button.move { background: #6c757d; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+        input[type="text"], select { width: 100%; padding: 10px; margin: 5px 0; border: 1px solid #ced4da; border-radius: 4px; box-sizing: border-box; }
+        .btn-main { background: #28a745; color: white; border: none; padding: 18px; width: 100%; font-size: 18px; font-weight: bold; cursor: pointer; border-radius: 6px; }
     </style>
 </head>
 <body>
 
     <h1>Photo Log Generator</h1>
-    <div class="section">
-        <h3>1. Upload .docx Template</h3>
+
+    <div class="card">
+        <h3>1. Template Setup</h3>
         <input type="file" id="template" accept=".docx">
     </div>
 
-    <div class="section">
-        <h3>2. Upload Photos</h3>
+    <div class="card">
+        <h3>2. Upload & Organize Photos</h3>
         <input type="file" id="photos" multiple accept="image/*" onchange="addPhotos()">
-        <div id="photo-list" style="margin-top: 20px;"></div>
+        <div id="list" style="margin-top:20px;"></div>
     </div>
 
-    <button onclick="generateDocument()">Generate & Download Log</button>
+    <button class="btn-main" onclick="generate()">Generate & Download Report</button>
 
     <script>
         let photoData = [];
 
         function addPhotos() {
             const files = document.getElementById('photos').files;
-            Array.from(files).forEach((file) => {
+            Array.from(files).forEach(file => {
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     photoData.push({ 
                         base64: e.target.result.split(',')[1], 
-                        name: file.name,
-                        caption: '',
-                        direction: ''
+                        name: file.name, 
+                        caption: '', 
+                        dir: '' 
                     });
-                    renderList();
+                    render();
                 };
                 reader.readAsDataURL(file);
             });
         }
 
-        function move(index, direction) {
-            const newIndex = index + direction;
-            if (newIndex < 0 || newIndex >= photoData.length) return;
-            const temp = photoData[index];
-            photoData[index] = photoData[newIndex];
-            photoData[newIndex] = temp;
-            renderList();
+        function move(idx, step) {
+            const target = idx + step;
+            if (target >= 0 && target < photoData.length) {
+                [photoData[idx], photoData[target]] = [photoData[target], photoData[idx]];
+                render();
+            }
         }
 
-        function renderList() {
-            const container = document.getElementById('photo-list');
+        function render() {
+            const container = document.getElementById('list');
             container.innerHTML = '';
-            photoData.forEach((photo, index) => {
+            photoData.forEach((p, i) => {
                 const div = document.createElement('div');
                 div.className = 'photo-entry';
                 div.innerHTML = `
                     <div class="controls">
-                        <button onclick="move(${index}, -1)">▲ Move Up</button>
-                        <button onclick="move(${index}, 1)">▼ Move Down</button>
-                        <strong>Photo ${index + 1}: ${photo.name}</strong>
+                        <button class="move" onclick="move(${i}, -1)">▲ Move Up</button>
+                        <button class="move" onclick="move(${i}, 1)">▼ Move Down</button>
+                        <strong>Photo ${i + 1}: ${p.name}</strong>
                     </div>
-                    <input type="text" placeholder="Description" value="${photo.caption}" onchange="photoData[${index}].caption = this.value">
-                    <select onchange="photoData[${index}].direction = this.value">
+                    <input type="text" placeholder="Description" value="${p.caption}" oninput="photoData[${i}].caption = this.value">
+                    <select onchange="photoData[${i}].dir = this.value">
                         <option value="">Select Direction</option>
-                        <option value="facing North" ${photo.direction === 'facing North' ? 'selected' : ''}>facing North</option>
-                        <option value="facing South" ${photo.direction === 'facing South' ? 'selected' : ''}>facing South</option>
-                        <option value="facing East" ${photo.direction === 'facing East' ? 'selected' : ''}>facing East</option>
-                        <option value="facing West" ${photo.direction === 'facing West' ? 'selected' : ''}>facing West</option>
-                        <option value="facing Downwards" ${photo.direction === 'facing Downwards' ? 'selected' : ''}>facing Downwards</option>
+                        <option value="facing North" ${p.dir === 'facing North' ? 'selected' : ''}>facing North</option>
+                        <option value="facing South" ${p.dir === 'facing South' ? 'selected' : ''}>facing South</option>
+                        <option value="facing East" ${p.dir === 'facing East' ? 'selected' : ''}>facing East</option>
+                        <option value="facing West" ${p.dir === 'facing West' ? 'selected' : ''}>facing West</option>
+                        <option value="facing Downwards" ${p.dir === 'facing Downwards' ? 'selected' : ''}>facing Downwards</option>
                     </select>
                 `;
                 container.appendChild(div);
             });
         }
 
-        function generateDocument() {
-            const PizZip = window.PizZip;
-            const Docxtemplater = window.docxtemplater;
-            const ImageModule = window.ImageModule;
-
-            const templateFile = document.getElementById('template').files[0];
-            if (!templateFile) return alert("Upload a template first!");
+        function generate() {
+            const fileInput = document.getElementById('template').files[0];
+            if (!fileInput || photoData.length === 0) return alert("Please upload a template and photos.");
 
             const reader = new FileReader();
             reader.onload = function(e) {
                 try {
-                    const zip = new PizZip(e.target.result);
-                    const imageOptions = {
+                    const zip = new window.PizZip(e.target.result);
+                    const imageModule = new window.ImageModule({
                         centered: false,
-                        getImage: function(tagValue) {
-                            const binaryString = window.atob(tagValue);
-                            const bytes = new Uint8Array(binaryString.length);
-                            for (let i = 0; i < binaryString.length; i++) { bytes[i] = binaryString.charCodeAt(i); }
-                            return bytes.buffer;
+                        getImage: (v) => {
+                            const bin = window.atob(v);
+                            const res = new Uint8Array(bin.length);
+                            for (let i = 0; i < bin.length; i++) res[i] = bin.charCodeAt(i);
+                            return res.buffer;
                         },
-                        getSize: function() { return [300, 225]; }
-                    };
+                        getSize: () => [300, 225]
+                    });
 
-                    const doc = new Docxtemplater(zip, {
-                        modules: [new ImageModule(imageOptions)],
+                    const doc = new window.docxtemplater(zip, {
+                        modules: [imageModule],
                         paragraphLoop: true,
                         linebreaks: true
                     });
@@ -126,18 +117,18 @@
                         photos: photoData.map((p, i) => ({
                             index: i + 1,
                             image: p.base64,
-                            caption: p.caption,
-                            direction: p.direction
+                            caption: p.caption || "No description provided.",
+                            direction: p.dir
                         }))
                     });
 
                     const out = doc.getZip().generate({ type: "blob", mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
-                    saveAs(out, "Generated_Photo_Log.docx");
-                } catch (error) {
-                    alert("Template Error: Ensure your .docx has {#photos}, {%image}, {index}, {caption}, and {direction}.");
+                    saveAs(out, "Site_Photo_Log.docx");
+                } catch (err) {
+                    alert("Template Error: " + err.message + ". Please ensure your Word file contains the exact tags: {#photos}, {%image}, {index}, {caption}, and {direction}.");
                 }
             };
-            reader.readAsArrayBuffer(templateFile);
+            reader.readAsArrayBuffer(fileInput);
         }
     </script>
 </body>
