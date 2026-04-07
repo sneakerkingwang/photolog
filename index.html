@@ -101,9 +101,13 @@
                     <select onchange="photoData[${i}].dir = this.value">
                         <option value="">Select Direction</option>
                         <option value="Facing North" ${p.dir === 'Facing North' ? 'selected' : ''}>Facing North</option>
-                        <option value="Facing South" ${p.dir === 'Facing South' ? 'selected' : ''}>Facing South</option>
+                        <option value="Facing NE" ${p.dir === 'Facing NE' ? 'selected' : ''}>Facing NE</option>
                         <option value="Facing East" ${p.dir === 'Facing East' ? 'selected' : ''}>Facing East</option>
+                        <option value="Facing SE" ${p.dir === 'Facing SE' ? 'selected' : ''}>Facing SE</option>
+                        <option value="Facing South" ${p.dir === 'Facing South' ? 'selected' : ''}>Facing South</option>
+                        <option value="Facing SW" ${p.dir === 'Facing SW' ? 'selected' : ''}>Facing SW</option>
                         <option value="Facing West" ${p.dir === 'Facing West' ? 'selected' : ''}>Facing West</option>
+                        <option value="Facing NW" ${p.dir === 'Facing NW' ? 'selected' : ''}>Facing NW</option>
                         <option value="Facing Downwards" ${p.dir === 'Facing Downwards' ? 'selected' : ''}>Facing Downwards</option>
                     </select>
                 `;
@@ -124,14 +128,14 @@
                     if (!ImageModule) throw new Error("ImageModule library failed to load.");
 
                     const imageOptions = {
-                        centered: true,
+                        centered: true, // Keeps your images perfectly centered!
                         getImage: (v) => {
                             const bin = window.atob(v);
                             const res = new Uint8Array(bin.length);
                             for (let i = 0; i < bin.length; i++) res[i] = bin.charCodeAt(i);
                             return res.buffer;
                         },
-                        getSize: () => [600, 450]
+                        getSize: () => [500, 375] // Adjust these numbers if you want the images larger or smaller
                     };
 
                     const doc = new window.docxtemplater(zip, {
