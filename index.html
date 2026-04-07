@@ -1,96 +1,131 @@
-<script src="https://cdnjs.cloudflare.com/ajax/libs/docxtemplater-image-module/3.1.1/docxtemplater-image-module.js"></script>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GSI Photo Log Generator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/docxtemplater/3.45.0/docxtemplater.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pizzip/3.1.4/pizzip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script src="https://unpkg.com/docxtemplater-image-module-free@1.1.1/build/converter-wrapper.js"></script>
+    <script src="https://unpkg.com/docxtemplater-image-module-free@1.1.1/build/imagetemplater.js"></script>
 
-<script>
-    let photoData = [];
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; max-width: 800px; margin: 40px auto; line-height: 1.6; padding: 0 20px; background-color: #f4f7f9; }
+        h1 { color: #333; }
+        .section { background: white; border: 1px solid #dfe3e8; padding: 25px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .photo-entry { background: #f9f9f9; padding: 15px; margin-bottom: 10px; border-radius: 6px; border-left: 4px solid #007bff; }
+        input[type="text"] { padding: 8px; border: 1px solid #ccc; border-radius: 4px; margin-right: 10px; }
+        select { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        button { background: #007bff; color: white; border: none; padding: 12px 24px; border-radius: 4px; cursor: pointer; font-weight: 600; width: 100%; font-size: 16px; }
+        button:hover { background: #0056b3; }
+    </style>
+</head>
+<body>
 
-    function renderPhotoInputs() {
-        const files = document.getElementById('photos').files;
-        const container = document.getElementById('photo-list');
-        container.innerHTML = '';
-        photoData = [];
+    <h1>Photo Log Generator</h1>
+    <p>Project: <strong>Nucor Steel Texas, Jewett</strong></p>
 
-        Array.from(files).forEach((file, index) => {
+    <div class="section">
+        <h3>1. Upload Template</h3>
+        <p>Select your <code>.docx</code> file (e.g., 10931_CAMU_Photo_Log_Template)</p>
+        <input type="file" id="template" accept=".docx">
+    </div>
+
+    <div class="section">
+        <h3>2. Upload Photos</h3>
+        <input type="file" id="photos" multiple accept="image/*" onchange="renderPhotoInputs()">
+        <div id="photo-list" style="margin-top: 20px;"></div>
+    </div>
+
+    <button onclick="generateDocument()">Generate & Download Log</button>
+
+    <script>
+        let photoData = [];
+
+        function renderPhotoInputs() {
+            const files = document.getElementById('photos').files;
+            const container = document.getElementById('photo-list');
+            container.innerHTML = '';
+            photoData = [];
+
+            Array.from(files).forEach((file, index) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    photoData.push({ 
+                        base64: e.target.result.split(',')[1], 
+                        name: file.name 
+                    });
+                    
+                    const div = document.createElement('div');
+                    div.className = 'photo-entry';
+                    div.innerHTML = `
+                        <strong>Photo ${index + 1}: ${file.name}</strong><br><br>
+                        <input type="text" placeholder="Description (e.g. Small patches lacking vegetation)" id="desc-${index}" style="width:65%">
+                        <select id="dir-${index}">
+                            <option value="North">North</option>
+                            <option value="South">South</option>
+                            <option value="East">East</option>
+                            <option value="West">West</option>
+                            <option value="Downwards">Downwards</option>
+                        </select>
+                    `;
+                    container.appendChild(div);
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        async function generateDocument() {
+            const templateFile = document.getElementById('template').files[0];
+            if (!templateFile) return alert("Please upload a template first.");
+
             const reader = new FileReader();
-            reader.onload = (e) => {
-                // We store the base64 data for the image module
-                photoData.push({ 
-                    base64: e.target.result.split(',')[1], 
-                    name: file.name 
-                });
-                
-                const div = document.createElement('div');
-                div.className = 'photo-entry';
-                div.innerHTML = `
-                    <strong>Photo ${index + 1}: ${file.name}</strong><br>
-                    <input type="text" placeholder="Description..." id="desc-${index}" style="width:70%">
-                    <select id="dir-${index}">
-                        <option value="North">North</option>
-                        <option value="South">South</option>
-                        <option value="East">East</option>
-                        <option value="West">West</option>
-                        <option value="Downwards">Downwards</option>
-                    </select>
-                `;
-                container.appendChild(div);
-            };
-            reader.readAsDataURL(file); // Changed to DataURL for easier image handling
-        });
-    }
+            reader.onload = function(e) {
+                try {
+                    const content = e.target.result;
+                    const zip = new PizZip(content);
+                    
+                    // Simple Image Module Config
+                    const imageOptions = {
+                        centered: false,
+                        getImage(tagValue) {
+                            return Uint8Array.from(atob(tagValue), c => c.charCodeAt(0));
+                        },
+                        getSize() {
+                            return [300, 225]; // Adjust image size here
+                        }
+                    };
+                    const imageModule = new window.ImageModule(imageOptions);
+                    
+                    const doc = new window.docxtemplater(zip, {
+                        modules: [imageModule],
+                        paragraphLoop: true,
+                        linebreaks: true
+                    });
 
-    function generateDocument() {
-        const templateFile = document.getElementById('template').files[0];
-        if (!templateFile) return alert("Please upload a template first.");
+                    // Match your template tags
+                    const photoEntries = photoData.map((photo, i) => ({
+                        image: photo.base64,
+                        caption: document.getElementById(`desc-${i}`).value,
+                        direction: document.getElementById(`dir-${i}`).value
+                    }));
 
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const content = e.target.result;
-            const zip = new PizZip(content);
-            
-            // Initialize the Image Module
-            const opts = {
-                centered: false,
-                getImage: function(tagValue) {
-                    return b64DecodeUnicode(tagValue);
-                },
-                getSize: function() {
-                    return [300, 225]; // Sets image size in the Word Doc (pixels)
+                    doc.render({ photos: photoEntries });
+
+                    const out = doc.getZip().generate({
+                        type: "blob",
+                        mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    });
+                    
+                    saveAs(out, "10931_CAMU_Photo_Log_Final.docx");
+                } catch (error) {
+                    console.error(error);
+                    alert("Error: " + error.message);
                 }
             };
-            const imageModule = new window.ImageModule(opts);
-
-            const doc = new window.docxtemplater(zip, { 
-                modules: [imageModule],
-                paragraphLoop: true, 
-                linebreaks: true 
-            });
-
-            // Prepare the data for the template
-            const tags = {
-                photos: photoData.map((photo, i) => ({
-                    image: photo.base64,
-                    caption: document.getElementById(`desc-${i}`).value,
-                    direction: document.getElementById(`dir-${i}`).value
-                }))
-            };
-
-            try {
-                doc.render(tags);
-            } catch (error) {
-                console.log(error);
-                return alert("Error rendering template. Make sure your tags {image}, {caption}, and {direction} are correct.");
-            }
-
-            const out = doc.getZip().generate({
-                type: "blob",
-                mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            });
-            saveAs(out, "10931_CAMU_Photo_Log_Generated.docx");
-        };
-        reader.readAsArrayBuffer(templateFile);
-    }
-
-    // Helper function for the image module
-    function b64DecodeUnicode(str) {
-        return Uint8Array.from(atob(str), c => c.charCodeAt(0));
-    }
-</script>
+            reader.readAsArrayBuffer(templateFile);
+        }
+    </script>
+</body>
+</html>
