@@ -2,11 +2,13 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Professional Photo Log Generator</title>
-    <script src="https://unpkg.com/pizzip@3.1.4/dist/pizzip.js"></script>
-    <script src="https://unpkg.com/docxtemplater@3.45.0/build/docxtemplater.js"></script>
-    <script src="https://unpkg.com/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+    <title>Photo Log Generator</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/pizzip@3.1.4/dist/pizzip.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/docxtemplater@3.45.0/build/docxtemplater.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
     <script src="https://unpkg.com/docxtemplater-image-module-free@1.1.1/build/imagetemplater.js"></script>
+
     <style>
         body { font-family: -apple-system, sans-serif; max-width: 850px; margin: 40px auto; padding: 20px; background-color: #f4f7f9; }
         .card { background: white; border: 1px solid #dfe3e8; padding: 25px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
@@ -23,11 +25,13 @@
 
     <div class="card">
         <h3>1. Template Setup</h3>
+        <p>Upload your <code>.docx</code> template file.</p>
         <input type="file" id="template" accept=".docx">
     </div>
 
     <div class="card">
-        <h3>2. Upload & Organize Photos</h3>
+        <h3>2. Organize Photos</h3>
+        <p>Rearrange with arrows. Index numbering updates automatically.</p>
         <input type="file" id="photos" multiple accept="image/*" onchange="addPhotos()">
         <div id="list" style="margin-top:20px;"></div>
     </div>
@@ -70,8 +74,8 @@
                 div.className = 'photo-entry';
                 div.innerHTML = `
                     <div class="controls">
-                        <button class="move" onclick="move(${i}, -1)">▲ Move Up</button>
-                        <button class="move" onclick="move(${i}, 1)">▼ Move Down</button>
+                        <button class="move" onclick="move(${i}, -1)">▲ Up</button>
+                        <button class="move" onclick="move(${i}, 1)">▼ Down</button>
                         <strong>Photo ${i + 1}: ${p.name}</strong>
                     </div>
                     <input type="text" placeholder="Description" value="${p.caption}" oninput="photoData[${i}].caption = this.value">
@@ -95,8 +99,14 @@
             const reader = new FileReader();
             reader.onload = function(e) {
                 try {
+                    // 1. Initialize PizZip
                     const zip = new window.PizZip(e.target.result);
-                    const imageModule = new window.ImageModule({
+
+                    // 2. Failsafe: Find the correct ImageModule constructor
+                    const ImageModule = window.ImageModule || window.docxtemplaterImageModule;
+                    if (!ImageModule) throw new Error("ImageModule library failed to load.");
+
+                    const imageOptions = {
                         centered: false,
                         getImage: (v) => {
                             const bin = window.atob(v);
@@ -105,14 +115,16 @@
                             return res.buffer;
                         },
                         getSize: () => [300, 225]
-                    });
+                    };
 
+                    // 3. Initialize Docxtemplater with the module
                     const doc = new window.docxtemplater(zip, {
-                        modules: [imageModule],
+                        modules: [new ImageModule(imageOptions)],
                         paragraphLoop: true,
                         linebreaks: true
                     });
 
+                    // 4. Render data
                     doc.render({
                         photos: photoData.map((p, i) => ({
                             index: i + 1,
@@ -122,10 +134,15 @@
                         }))
                     });
 
-                    const out = doc.getZip().generate({ type: "blob", mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
+                    const out = doc.getZip().generate({ 
+                        type: "blob", 
+                        mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" 
+                    });
                     saveAs(out, "Site_Photo_Log.docx");
+
                 } catch (err) {
-                    alert("Template Error: " + err.message + ". Please ensure your Word file contains the exact tags: {#photos}, {%image}, {index}, {caption}, and {direction}.");
+                    console.error(err);
+                    alert("Technical Error: " + err.message);
                 }
             };
             reader.readAsArrayBuffer(fileInput);
