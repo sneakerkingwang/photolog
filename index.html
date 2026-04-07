@@ -5,10 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GSI Photo Log Generator</title>
     
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pizzip/3.1.4/pizzip.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/docxtemplater/3.45.0/docxtemplater.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-    
+    <script src="https://cdn.jsdelivr.net/npm/pizzip@3.1.4/dist/pizzip.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/docxtemplater@3.45.0/build/docxtemplater.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
     <script src="https://unpkg.com/docxtemplater-image-module-free@1.1.1/build/converter-wrapper.js"></script>
     <script src="https://unpkg.com/docxtemplater-image-module-free@1.1.1/build/imagetemplater.js"></script>
 
@@ -21,7 +20,6 @@
         select { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
         button { background: #007bff; color: white; border: none; padding: 15px; border-radius: 4px; cursor: pointer; font-weight: 600; width: 100%; font-size: 16px; transition: 0.2s; }
         button:hover { background: #0056b3; }
-        code { background: #eee; padding: 2px 4px; border-radius: 4px; }
     </style>
 </head>
 <body>
@@ -31,7 +29,7 @@
 
     <div class="section">
         <h3>1. Template Upload</h3>
-        <p>Select your <code>.docx</code> template file.</p>
+        <p>Select your <code>.docx</code> template (e.g., 10931_CAMU_Photo_Log_Template).</p>
         <input type="file" id="template" accept=".docx">
     </div>
 
@@ -47,7 +45,6 @@
     <script>
         let photoData = [];
 
-        // Function to create input fields for each uploaded photo
         function renderPhotoInputs() {
             const files = document.getElementById('photos').files;
             const container = document.getElementById('photo-list');
@@ -81,26 +78,24 @@
             });
         }
 
-        // Main function to generate the Word Doc
         async function generateDocument() {
             const templateFile = document.getElementById('template').files[0];
             if (!templateFile) return alert("Please upload a template file first.");
-            if (photoData.length === 0) return alert("Please upload at least one photo.");
 
             const reader = new FileReader();
             reader.onload = function(e) {
                 try {
                     const content = e.target.result;
-                    const zip = new window.PizZip(content);
+                    // Standard PizZip initialization
+                    const zip = new PizZip(content);
                     
-                    // Image Module Configuration
                     const imageOptions = {
                         centered: false,
                         getImage(tagValue) {
                             return Uint8Array.from(atob(tagValue), c => c.charCodeAt(0));
                         },
                         getSize() {
-                            return [300, 225]; // Width and Height in pixels for the Word Doc
+                            return [300, 225]; 
                         }
                     };
                     const imageModule = new window.ImageModule(imageOptions);
@@ -111,7 +106,6 @@
                         linebreaks: true
                     });
 
-                    // Mapping photos to the {photos} loop in your Word Doc
                     const photoEntries = photoData.map((photo, i) => ({
                         image: photo.base64,
                         caption: document.getElementById(`desc-${i}`).value || "No description provided.",
@@ -125,7 +119,6 @@
                         mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                     });
                     
-                    // Specific filename for GSI project 10931 
                     saveAs(out, "10931_CAMU_Photo_Log_Generated.docx");
                 } catch (error) {
                     console.error(error);
