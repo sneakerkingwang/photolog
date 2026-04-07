@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Photo Log Generator</title>
+    <title>Professional Photo Log Generator</title>
     
     <script src="https://cdn.jsdelivr.net/npm/pizzip@3.1.4/dist/pizzip.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/docxtemplater@3.29.4/build/docxtemplater.js"></script>
@@ -10,18 +10,53 @@
     <script src="https://cdn.jsdelivr.net/npm/docxtemplater-image-module-free@1.1.1/build/imagemodule.js"></script>
 
     <style>
-        body { font-family: -apple-system, sans-serif; max-width: 850px; margin: 40px auto; padding: 20px; background-color: #f4f7f9; }
-        .card { background: white; border: 1px solid #dfe3e8; padding: 25px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        .photo-entry { background: #fff; border-left: 5px solid #007bff; padding: 15px; margin-bottom: 12px; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        .controls { display: flex; gap: 8px; margin-bottom: 10px; }
-        button.move { background: #6c757d; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; }
-        input[type="text"], select { width: 100%; padding: 10px; margin: 5px 0; border: 1px solid #ced4da; border-radius: 4px; box-sizing: border-box; }
-        .btn-main { background: #28a745; color: white; border: none; padding: 18px; width: 100%; font-size: 18px; font-weight: bold; cursor: pointer; border-radius: 6px; }
+        /* Modern, clean typography and background */
+        body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; max-width: 900px; margin: 40px auto; padding: 20px; background-color: #f0f4f8; color: #334155; }
+        h1 { color: #0f172a; font-weight: 700; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 30px; }
+        
+        /* Sleek Card Design */
+        .card { background: white; border: none; padding: 25px 30px; border-radius: 12px; margin-bottom: 25px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -2px rgba(0,0,0,0.05); }
+        .card h3 { margin-top: 0; color: #334155; font-size: 1.1rem; }
+        .card p { color: #64748b; font-size: 0.95rem; margin-bottom: 15px; }
+        
+        /* Photo Entry Row Layout */
+        .photo-entry { background: #f8fafc; border: 1px solid #e2e8f0; border-left: 5px solid #3b82f6; padding: 15px; margin-bottom: 15px; border-radius: 8px; display: flex; gap: 20px; align-items: flex-start; transition: transform 0.2s ease; }
+        .photo-entry:hover { transform: translateX(2px); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        
+        /* Image Thumbnail */
+        .thumbnail { width: 120px; height: 90px; object-fit: cover; border-radius: 6px; border: 1px solid #cbd5e1; flex-shrink: 0; background: #e2e8f0; }
+        
+        /* Form Controls */
+        .entry-content { flex-grow: 1; display: flex; flex-direction: column; gap: 10px; }
+        .controls { display: flex; gap: 8px; align-items: center; justify-content: space-between; }
+        .controls-left { display: flex; gap: 8px; align-items: center; }
+        .controls strong { font-size: 0.95rem; color: #0f172a; margin-left: 5px; }
+        
+        /* Buttons */
+        button { cursor: pointer; border-radius: 6px; font-weight: 500; transition: all 0.2s ease; }
+        button.move { background: #e2e8f0; color: #475569; border: 1px solid #cbd5e1; padding: 6px 12px; font-size: 13px; }
+        button.move:hover { background: #cbd5e1; color: #0f172a; }
+        button.delete { background: #fee2e2; color: #ef4444; border: 1px solid #fecaca; padding: 6px 12px; font-size: 13px; }
+        button.delete:hover { background: #fecaca; color: #b91c1c; }
+        
+        /* Inputs */
+        input[type="text"], select, input[type="file"] { width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.95rem; color: #334155; box-sizing: border-box; background-color: white; transition: border-color 0.2s; }
+        input[type="text"]:focus, select:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+        
+        /* Main Generate Button */
+        .btn-main { background: #10b981; color: white; border: none; padding: 18px; width: 100%; font-size: 18px; font-weight: 700; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.2); margin-bottom: 30px; letter-spacing: 0.5px; }
+        .btn-main:hover:not(:disabled) { background: #059669; transform: translateY(-1px); box-shadow: 0 6px 8px -1px rgba(16, 185, 129, 0.3); }
+        .btn-main:disabled { background: #94a3b8; cursor: not-allowed; transform: none; box-shadow: none; }
+        
+        /* Footer */
+        .footer { text-align: center; color: #64748b; font-size: 14px; padding-top: 20px; border-top: 1px solid #cbd5e1; }
+        .footer a { color: #3b82f6; text-decoration: none; font-weight: 500; }
+        .footer a:hover { text-decoration: underline; color: #2563eb; }
     </style>
 </head>
 <body>
 
-    <h1>Photo Log Generator</h1>
+    <h1>Site Photo Log Generator</h1>
 
     <div class="card">
         <h3>1. Template Setup</h3>
@@ -36,15 +71,22 @@
 
     <div class="card">
         <h3>2. Organize Photos</h3>
-        <p>Rearrange with arrows. Index numbering updates automatically.</p>
+        <p>Upload photos, set their directions, and add descriptive captions.</p>
         <input type="file" id="photos" multiple accept="image/*" onchange="addPhotos()">
-        <div id="list" style="margin-top:20px;"></div>
+        <div id="list" style="margin-top:25px;"></div>
     </div>
 
-    <button class="btn-main" onclick="generate()">Generate & Download Report</button>
+    <button id="generateBtn" class="btn-main" onclick="generate()">Generate & Download Report</button>
+
+    <div class="footer">
+        <p>Created by <strong>Michael Wang</strong></p>
+        <p>Questions? Email <a href="mailto:zwang@gsi-net.com">zwang@gsi-net.com</a> or call <strong>979-551-5334</strong></p>
+        <p id="lastUpdated" style="font-size: 12px; margin-top: 10px; color: #94a3b8;"></p>
+    </div>
 
     <script>
-        // --- MONKEY PATCH ---
+        document.getElementById('lastUpdated').innerText = "Last Updated: " + document.lastModified;
+
         const originalDescriptor = Object.getOwnPropertyDescriptor(Element.prototype, 'namespaceURI');
         if (originalDescriptor && !originalDescriptor.set) {
             Object.defineProperty(Element.prototype, 'namespaceURI', {
@@ -90,6 +132,13 @@
             }
         }
 
+        // NEW FEATURE: Remove individual photos
+        function removePhoto(idx) {
+            photoData.splice(idx, 1);
+            render();
+        }
+
+        // UPDATED: Added thumbnail image and delete button to the HTML layout
         function render() {
             const container = document.getElementById('list');
             container.innerHTML = '';
@@ -97,24 +146,30 @@
                 const div = document.createElement('div');
                 div.className = 'photo-entry';
                 div.innerHTML = `
-                    <div class="controls">
-                        <button class="move" onclick="move(${i}, -1)">▲ Up</button>
-                        <button class="move" onclick="move(${i}, 1)">▼ Down</button>
-                        <strong>Photo ${i + 1}: ${p.name}</strong>
+                    <img src="data:image/jpeg;base64,${p.base64}" class="thumbnail" alt="Preview">
+                    <div class="entry-content">
+                        <div class="controls">
+                            <div class="controls-left">
+                                <button class="move" onclick="move(${i}, -1)">▲</button>
+                                <button class="move" onclick="move(${i}, 1)">▼</button>
+                                <strong>Photo ${i + 1}: ${p.name}</strong>
+                            </div>
+                            <button class="delete" onclick="removePhoto(${i})">🗑️ Remove</button>
+                        </div>
+                        <select onchange="photoData[${i}].dir = this.value">
+                            <option value="">Select Direction</option>
+                            <option value="Facing North" ${p.dir === 'Facing North' ? 'selected' : ''}>Facing North</option>
+                            <option value="Facing NE" ${p.dir === 'Facing NE' ? 'selected' : ''}>Facing NE</option>
+                            <option value="Facing East" ${p.dir === 'Facing East' ? 'selected' : ''}>Facing East</option>
+                            <option value="Facing SE" ${p.dir === 'Facing SE' ? 'selected' : ''}>Facing SE</option>
+                            <option value="Facing South" ${p.dir === 'Facing South' ? 'selected' : ''}>Facing South</option>
+                            <option value="Facing SW" ${p.dir === 'Facing SW' ? 'selected' : ''}>Facing SW</option>
+                            <option value="Facing West" ${p.dir === 'Facing West' ? 'selected' : ''}>Facing West</option>
+                            <option value="Facing NW" ${p.dir === 'Facing NW' ? 'selected' : ''}>Facing NW</option>
+                            <option value="Facing Downwards" ${p.dir === 'Facing Downwards' ? 'selected' : ''}>Facing Downwards</option>
+                        </select>
+                        <input type="text" placeholder="Type a description or caption for this photo..." value="${p.caption}" oninput="photoData[${i}].caption = this.value">
                     </div>
-                    <input type="text" placeholder="Description" value="${p.caption}" oninput="photoData[${i}].caption = this.value">
-                    <select onchange="photoData[${i}].dir = this.value">
-                        <option value="">Select Direction</option>
-                        <option value="Facing North" ${p.dir === 'Facing North' ? 'selected' : ''}>Facing North</option>
-                        <option value="Facing NE" ${p.dir === 'Facing NE' ? 'selected' : ''}>Facing NE</option>
-                        <option value="Facing East" ${p.dir === 'Facing East' ? 'selected' : ''}>Facing East</option>
-                        <option value="Facing SE" ${p.dir === 'Facing SE' ? 'selected' : ''}>Facing SE</option>
-                        <option value="Facing South" ${p.dir === 'Facing South' ? 'selected' : ''}>Facing South</option>
-                        <option value="Facing SW" ${p.dir === 'Facing SW' ? 'selected' : ''}>Facing SW</option>
-                        <option value="Facing West" ${p.dir === 'Facing West' ? 'selected' : ''}>Facing West</option>
-                        <option value="Facing NW" ${p.dir === 'Facing NW' ? 'selected' : ''}>Facing NW</option>
-                        <option value="Facing Downwards" ${p.dir === 'Facing Downwards' ? 'selected' : ''}>Facing Downwards</option>
-                    </select>
                 `;
                 container.appendChild(div);
             });
@@ -122,7 +177,15 @@
 
         function generate() {
             const fileInput = document.getElementById('template').files[0];
-            if (!fileInput || photoData.length === 0) return alert("Please upload a template and photos.");
+            if (!fileInput || photoData.length === 0) {
+                return alert("Please upload both a Word template and at least one photo.");
+            }
+
+            // Visual feedback: Disable button while generating
+            const btn = document.getElementById('generateBtn');
+            const originalText = btn.innerText;
+            btn.disabled = true;
+            btn.innerText = "Processing Document... Please Wait";
 
             const reader = new FileReader();
             reader.onload = function(e) {
@@ -130,13 +193,11 @@
                     const zip = new window.PizZip(e.target.result);
                     const ImageModule = window.ImageModule || window.docxtemplaterImageModule;
 
-                    // 1. Get the template type selected by the user
                     const templateType = document.getElementById('templateType').value;
 
-                    // 2. Set the image size based on the template type
-                    let imgDimensions = [500, 375]; // Default large size for single photos
+                    let imgDimensions = [500, 375]; 
                     if (templateType === 'grid') {
-                        imgDimensions = [280, 210]; // Smaller size for the 2x2 grid
+                        imgDimensions = [280, 210]; 
                     }
 
                     const imageOptions = {
@@ -156,7 +217,6 @@
                         linebreaks: true
                     });
 
-                    // 3. Format the base photo data
                     const formattedPhotos = photoData.map((p, i) => ({
                         index: i + 1,
                         image: p.base64,
@@ -164,16 +224,11 @@
                         direction: p.dir
                     }));
 
-                    // 4. Structure the data exactly how the chosen template expects it
                     let dataToRender = {};
 
                     if (templateType === 'single') {
-                        // The single photo template uses the {#photos} loop
-                        dataToRender = {
-                            photos: formattedPhotos
-                        };
+                        dataToRender = { photos: formattedPhotos };
                     } else if (templateType === 'grid') {
-                        // The 2x2 grid template uses the {#pages} loop with {#p1}, {#p2}, etc.
                         const pages = [];
                         for (let i = 0; i < formattedPhotos.length; i += 4) {
                             pages.push({
@@ -186,7 +241,6 @@
                         dataToRender = { pages: pages };
                     }
 
-                    // 5. Render the document
                     doc.render(dataToRender);
 
                     const out = doc.getZip().generate({ 
@@ -198,6 +252,10 @@
                 } catch (err) {
                     console.error(err);
                     alert("Technical Error: " + err.message);
+                } finally {
+                    // Re-enable the button
+                    btn.disabled = false;
+                    btn.innerText = originalText;
                 }
             };
             reader.readAsArrayBuffer(fileInput);
