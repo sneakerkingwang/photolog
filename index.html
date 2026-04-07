@@ -7,7 +7,6 @@
     <script src="https://cdn.jsdelivr.net/npm/pizzip@3.1.4/dist/pizzip.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/docxtemplater@3.29.4/build/docxtemplater.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
-    
     <script src="https://cdn.jsdelivr.net/npm/docxtemplater-image-module-free@1.1.1/build/imagemodule.js"></script>
 
     <style>
@@ -26,8 +25,13 @@
 
     <div class="card">
         <h3>1. Template Setup</h3>
-        <p>Upload your <code>.docx</code> template file.</p>
+        <p>Upload your <code>.docx</code> template file, then select which layout type it uses.</p>
         <input type="file" id="template" accept=".docx">
+        
+        <select id="templateType" style="margin-top: 15px;">
+            <option value="single">Single Photo Template (Continuous List)</option>
+            <option value="grid">2x2 Grid Template (4 Photos per Page)</option>
+        </select>
     </div>
 
     <div class="card">
@@ -40,32 +44,23 @@
     <button class="btn-main" onclick="generate()">Generate & Download Report</button>
 
     <script>
-        // =====================================================================
-        // THE MONKEY PATCH
-        // This stops the docxtemplater-image-module from crashing modern Chrome
-        // by quietly ignoring its attempt to overwrite a read-only DOM property.
-        // =====================================================================
+        // --- MONKEY PATCH ---
         const originalDescriptor = Object.getOwnPropertyDescriptor(Element.prototype, 'namespaceURI');
         if (originalDescriptor && !originalDescriptor.set) {
             Object.defineProperty(Element.prototype, 'namespaceURI', {
                 get: originalDescriptor.get,
-                set: function() { 
-                    // Do nothing. Just let the library think it succeeded.
-                },
+                set: function() {},
                 enumerable: originalDescriptor.enumerable,
                 configurable: true
             });
         }
-        // =====================================================================
 
         let photoData = [];
 
-        // THE FIX: Using async/await and Promise.all to preserve file upload order
         async function addPhotos() {
             const files = Array.from(document.getElementById('photos').files);
             if (files.length === 0) return;
 
-            // Turn each file reading process into a "Promise"
             const filePromises = files.map(file => {
                 return new Promise((resolve) => {
                     const reader = new FileReader();
@@ -81,16 +76,9 @@
                 });
             });
 
-            // Wait for ALL files to finish reading, keeping them in exact order
             const orderedPhotos = await Promise.all(filePromises);
-            
-            // Add them to our main list
             photoData.push(...orderedPhotos);
-            
-            // Render the page
             render();
-            
-            // Clear the file input so you can easily add a second batch of photos later
             document.getElementById('photos').value = '';
         }
 
@@ -140,9 +128,16 @@
             reader.onload = function(e) {
                 try {
                     const zip = new window.PizZip(e.target.result);
-
                     const ImageModule = window.ImageModule || window.docxtemplaterImageModule;
-                    if (!ImageModule) throw new Error("ImageModule library failed to load.");
+
+                    // 1. Get the template type selected by the user
+                    const templateType = document.getElementById('templateType').value;
+
+                    // 2. Set the image size based on the template type
+                    let imgDimensions = [500, 375]; // Default large size for single photos
+                    if (templateType === 'grid') {
+                        imgDimensions = [280, 210]; // Smaller size for the 2x2 grid
+                    }
 
                     const imageOptions = {
                         centered: true, 
@@ -152,7 +147,7 @@
                             for (let i = 0; i < bin.length; i++) res[i] = bin.charCodeAt(i);
                             return res.buffer;
                         },
-                        getSize: () => [500, 375] 
+                        getSize: () => imgDimensions 
                     };
 
                     const doc = new window.docxtemplater(zip, {
@@ -161,14 +156,38 @@
                         linebreaks: true
                     });
 
-                    doc.render({
-                        photos: photoData.map((p, i) => ({
-                            index: i + 1,
-                            image: p.base64,
-                            caption: p.caption || "No description provided.",
-                            direction: p.dir
-                        }))
-                    });
+                    // 3. Format the base photo data
+                    const formattedPhotos = photoData.map((p, i) => ({
+                        index: i + 1,
+                        image: p.base64,
+                        caption: p.caption || "No description provided.",
+                        direction: p.dir
+                    }));
+
+                    // 4. Structure the data exactly how the chosen template expects it
+                    let dataToRender = {};
+
+                    if (templateType === 'single') {
+                        // The single photo template uses the {#photos} loop
+                        dataToRender = {
+                            photos: formattedPhotos
+                        };
+                    } else if (templateType === 'grid') {
+                        // The 2x2 grid template uses the {#pages} loop with {#p1}, {#p2}, etc.
+                        const pages = [];
+                        for (let i = 0; i < formattedPhotos.length; i += 4) {
+                            pages.push({
+                                p1: formattedPhotos[i] ? [formattedPhotos[i]] : false,
+                                p2: formattedPhotos[i+1] ? [formattedPhotos[i+1]] : false,
+                                p3: formattedPhotos[i+2] ? [formattedPhotos[i+2]] : false,
+                                p4: formattedPhotos[i+3] ? [formattedPhotos[i+3]] : false
+                            });
+                        }
+                        dataToRender = { pages: pages };
+                    }
+
+                    // 5. Render the document
+                    doc.render(dataToRender);
 
                     const out = doc.getZip().generate({ 
                         type: "blob", 
