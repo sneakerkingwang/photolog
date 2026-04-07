@@ -100,11 +100,11 @@
                     <input type="text" placeholder="Description" value="${p.caption}" oninput="photoData[${i}].caption = this.value">
                     <select onchange="photoData[${i}].dir = this.value">
                         <option value="">Select Direction</option>
-                        <option value="facing North" ${p.dir === 'facing North' ? 'selected' : ''}>facing North</option>
-                        <option value="facing South" ${p.dir === 'facing South' ? 'selected' : ''}>facing South</option>
-                        <option value="facing East" ${p.dir === 'facing East' ? 'selected' : ''}>facing East</option>
-                        <option value="facing West" ${p.dir === 'facing West' ? 'selected' : ''}>facing West</option>
-                        <option value="facing Downwards" ${p.dir === 'facing Downwards' ? 'selected' : ''}>facing Downwards</option>
+                        <option value="Facing North" ${p.dir === 'Facing North' ? 'selected' : ''}>Facing North</option>
+                        <option value="Facing South" ${p.dir === 'Facing South' ? 'selected' : ''}>Facing South</option>
+                        <option value="Facing East" ${p.dir === 'Facing East' ? 'selected' : ''}>Facing East</option>
+                        <option value="Facing West" ${p.dir === 'Facing West' ? 'selected' : ''}>Facing West</option>
+                        <option value="Facing Downwards" ${p.dir === 'Facing Downwards' ? 'selected' : ''}>Facing Downwards</option>
                     </select>
                 `;
                 container.appendChild(div);
