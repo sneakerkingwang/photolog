@@ -60,21 +60,38 @@
 
         let photoData = [];
 
-        function addPhotos() {
-            const files = document.getElementById('photos').files;
-            Array.from(files).forEach(file => {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    photoData.push({ 
-                        base64: e.target.result.split(',')[1], 
-                        name: file.name, 
-                        caption: '', 
-                        dir: '' 
-                    });
-                    render();
-                };
-                reader.readAsDataURL(file);
+        // THE FIX: Using async/await and Promise.all to preserve file upload order
+        async function addPhotos() {
+            const files = Array.from(document.getElementById('photos').files);
+            if (files.length === 0) return;
+
+            // Turn each file reading process into a "Promise"
+            const filePromises = files.map(file => {
+                return new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        resolve({ 
+                            base64: e.target.result.split(',')[1], 
+                            name: file.name, 
+                            caption: '', 
+                            dir: '' 
+                        });
+                    };
+                    reader.readAsDataURL(file);
+                });
             });
+
+            // Wait for ALL files to finish reading, keeping them in exact order
+            const orderedPhotos = await Promise.all(filePromises);
+            
+            // Add them to our main list
+            photoData.push(...orderedPhotos);
+            
+            // Render the page
+            render();
+            
+            // Clear the file input so you can easily add a second batch of photos later
+            document.getElementById('photos').value = '';
         }
 
         function move(idx, step) {
@@ -128,14 +145,14 @@
                     if (!ImageModule) throw new Error("ImageModule library failed to load.");
 
                     const imageOptions = {
-                        centered: true, // Keeps your images perfectly centered!
+                        centered: true, 
                         getImage: (v) => {
                             const bin = window.atob(v);
                             const res = new Uint8Array(bin.length);
                             for (let i = 0; i < bin.length; i++) res[i] = bin.charCodeAt(i);
                             return res.buffer;
                         },
-                        getSize: () => [500, 375] // Adjust these numbers if you want the images larger or smaller
+                        getSize: () => [500, 375] 
                     };
 
                     const doc = new window.docxtemplater(zip, {
