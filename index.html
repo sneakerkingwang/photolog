@@ -7,7 +7,8 @@
     <script src="https://cdn.jsdelivr.net/npm/pizzip@3.1.4/dist/pizzip.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/docxtemplater@3.45.0/build/docxtemplater.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
-    <script src="https://unpkg.com/docxtemplater-image-module-free@1.1.1/build/imagetemplater.js"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/docxtemplater-image-module/3.2.2/docxtemplater-image-module.min.js"></script>
 
     <style>
         body { font-family: -apple-system, sans-serif; max-width: 850px; margin: 40px auto; padding: 20px; background-color: #f4f7f9; }
@@ -102,9 +103,13 @@
                     // 1. Initialize PizZip
                     const zip = new window.PizZip(e.target.result);
 
-                    // 2. Failsafe: Find the correct ImageModule constructor
-                    const ImageModule = window.ImageModule || window.docxtemplaterImageModule;
-                    if (!ImageModule) throw new Error("ImageModule library failed to load.");
+                    // 2. Failsafe: Find the correct ImageModule constructor with updated variable checks
+                    const ImageModule = window.DocxtemplaterImageModule || window.ImageModule || window.docxtemplaterImageModule;
+                    
+                    if (!ImageModule) {
+                        console.error("Loaded window objects:", Object.keys(window).filter(k => k.toLowerCase().includes('docx')));
+                        throw new Error("ImageModule library failed to load. Check your browser's Developer Tools Console or Network tab for blocked scripts.");
+                    }
 
                     const imageOptions = {
                         centered: false,
