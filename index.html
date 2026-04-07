@@ -5,42 +5,37 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GSI Photo Log Generator</title>
     
-    <script src="https://cdn.jsdelivr.net/npm/pizzip@3.1.4/dist/pizzip.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/docxtemplater@3.45.0/build/docxtemplater.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
-    <script src="https://unpkg.com/docxtemplater-image-module-free@1.1.1/build/converter-wrapper.js"></script>
+    <script src="https://unpkg.com/pizzip@3.1.4/dist/pizzip.js"></script>
+    <script src="https://unpkg.com/docxtemplater@3.45.0/build/docxtemplater.js"></script>
+    <script src="https://unpkg.com/file-saver@2.0.5/dist/FileSaver.min.js"></script>
     <script src="https://unpkg.com/docxtemplater-image-module-free@1.1.1/build/imagetemplater.js"></script>
 
     <style>
-        body { font-family: -apple-system, sans-serif; max-width: 800px; margin: 40px auto; line-height: 1.6; padding: 0 20px; background-color: #f4f7f9; }
-        h1 { color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
+        body { font-family: -apple-system, sans-serif; max-width: 800px; margin: 40px auto; padding: 0 20px; background-color: #f4f7f9; color: #333; }
         .section { background: white; border: 1px solid #dfe3e8; padding: 25px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .photo-entry { background: #f9f9f9; padding: 15px; margin-bottom: 10px; border-radius: 6px; border-left: 4px solid #007bff; }
-        input[type="text"] { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 60%; margin-bottom: 5px; }
-        select { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
-        button { background: #007bff; color: white; border: none; padding: 15px; border-radius: 4px; cursor: pointer; font-weight: 600; width: 100%; font-size: 16px; transition: 0.2s; }
+        input[type="text"] { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 60%; }
+        button { background: #007bff; color: white; border: none; padding: 15px; border-radius: 4px; cursor: pointer; width: 100%; font-size: 16px; font-weight: bold; }
         button:hover { background: #0056b3; }
     </style>
 </head>
 <body>
 
     <h1>GSI Photo Log Generator</h1>
-    <p>Project: <strong>Nucor Steel Texas, Jewett</strong></p>
+    <p>Project: <strong>Nucor Steel Texas</strong></p>
 
     <div class="section">
-        <h3>1. Template Upload</h3>
-        <p>Select your <code>.docx</code> template (e.g., 10931_CAMU_Photo_Log_Template).</p>
+        <h3>1. Template</h3>
         <input type="file" id="template" accept=".docx">
     </div>
 
     <div class="section">
-        <h3>2. Image Upload</h3>
-        <p>Select multiple site photos to include in the log.</p>
+        <h3>2. Photos</h3>
         <input type="file" id="photos" multiple accept="image/*" onchange="renderPhotoInputs()">
         <div id="photo-list" style="margin-top: 20px;"></div>
     </div>
 
-    <button onclick="generateDocument()">Generate & Download Photo Log</button>
+    <button onclick="generateDocument()">Generate & Download Log</button>
 
     <script>
         let photoData = [];
@@ -54,75 +49,70 @@
             Array.from(files).forEach((file, index) => {
                 const reader = new FileReader();
                 reader.onload = (e) => {
-                    photoData.push({ 
-                        base64: e.target.result.split(',')[1], 
-                        name: file.name 
-                    });
-                    
+                    photoData.push({ base64: e.target.result.split(',')[1], name: file.name });
                     const div = document.createElement('div');
                     div.className = 'photo-entry';
-                    div.innerHTML = `
-                        <strong>${file.name}</strong><br>
-                        <input type="text" placeholder="Description (e.g. Observed patches lacking vegetation)" id="desc-${index}">
-                        <select id="dir-${index}">
-                            <option value="North">North</option>
-                            <option value="South">South</option>
-                            <option value="East">East</option>
-                            <option value="West">West</option>
-                            <option value="Downwards">Downwards</option>
-                        </select>
-                    `;
+                    div.innerHTML = `<strong>${file.name}</strong><br><input type="text" placeholder="Description" id="desc-${index}">`;
                     container.appendChild(div);
                 };
                 reader.readAsDataURL(file);
             });
         }
 
-        async function generateDocument() {
+        function generateDocument() {
+            // Self-Correction: Check if libraries are loaded
+            const PizZip = window.PizZip;
+            const Docxtemplater = window.docxtemplater;
+            const ImageModule = window.ImageModule;
+
+            if (!PizZip || !Docxtemplater) {
+                return alert("Libraries are still loading. Please wait 5 seconds and try again.");
+            }
+
             const templateFile = document.getElementById('template').files[0];
-            if (!templateFile) return alert("Please upload a template file first.");
+            if (!templateFile) return alert("Upload a template first!");
 
             const reader = new FileReader();
             reader.onload = function(e) {
                 try {
-                    const content = e.target.result;
-                    // Standard PizZip initialization
-                    const zip = new PizZip(content);
+                    const zip = new PizZip(e.target.result);
                     
                     const imageOptions = {
                         centered: false,
-                        getImage(tagValue) {
-                            return Uint8Array.from(atob(tagValue), c => c.charCodeAt(0));
+                        getImage: function(tagValue) {
+                            const binaryString = window.atob(tagValue);
+                            const len = binaryString.length;
+                            const bytes = new Uint8Array(len);
+                            for (let i = 0; i < len; i++) { bytes[i] = binaryString.charCodeAt(i); }
+                            return bytes.buffer;
                         },
-                        getSize() {
-                            return [300, 225]; 
-                        }
+                        getSize: function() { return [300, 225]; } // 4:3 Aspect Ratio
                     };
-                    const imageModule = new window.ImageModule(imageOptions);
-                    
-                    const doc = new window.docxtemplater(zip, {
-                        modules: [imageModule],
+
+                    const doc = new Docxtemplater(zip, {
+                        modules: [new ImageModule(imageOptions)],
                         paragraphLoop: true,
                         linebreaks: true
                     });
 
-                    const photoEntries = photoData.map((photo, i) => ({
-                        image: photo.base64,
-                        caption: document.getElementById(`desc-${i}`).value || "No description provided.",
-                        direction: document.getElementById(`dir-${i}`).value
-                    }));
+                    const data = {
+                        photos: photoData.map((p, i) => ({
+                            image: p.base64,
+                            caption: document.getElementById(`desc-${i}`).value || "No description provided."
+                        }))
+                    };
 
-                    doc.render({ photos: photoEntries });
+                    doc.render(data);
 
                     const out = doc.getZip().generate({
                         type: "blob",
                         mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                     });
                     
-                    saveAs(out, "10931_CAMU_Photo_Log_Generated.docx");
+                    saveAs(out, "GSI_Photo_Log_Final.docx");
                 } catch (error) {
                     console.error(error);
-                    alert("An error occurred: " + error.message);
+                    alert("Template Error: Ensure your Word file has {#photos}, {%image}, and {caption} tags.");
                 }
             };
             reader.readAsArrayBuffer(templateFile);
