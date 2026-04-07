@@ -5,12 +5,10 @@
     <title>Photo Log Generator</title>
     
     <script src="https://cdn.jsdelivr.net/npm/pizzip@3.1.4/dist/pizzip.min.js"></script>
-    
     <script src="https://cdn.jsdelivr.net/npm/docxtemplater@3.29.4/build/docxtemplater.js"></script>
-    
     <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
     
-    <script src="https://cdn.jsdelivr.net/npm/@slosarek/docxtemplater-image-module-free@1.2.0/build/imagemodule.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/docxtemplater-image-module-free@1.1.1/build/imagemodule.js"></script>
 
     <style>
         body { font-family: -apple-system, sans-serif; max-width: 850px; margin: 40px auto; padding: 20px; background-color: #f4f7f9; }
@@ -42,6 +40,24 @@
     <button class="btn-main" onclick="generate()">Generate & Download Report</button>
 
     <script>
+        // =====================================================================
+        // THE MONKEY PATCH
+        // This stops the docxtemplater-image-module from crashing modern Chrome
+        // by quietly ignoring its attempt to overwrite a read-only DOM property.
+        // =====================================================================
+        const originalDescriptor = Object.getOwnPropertyDescriptor(Element.prototype, 'namespaceURI');
+        if (originalDescriptor && !originalDescriptor.set) {
+            Object.defineProperty(Element.prototype, 'namespaceURI', {
+                get: originalDescriptor.get,
+                set: function() { 
+                    // Do nothing. Just let the library think it succeeded.
+                },
+                enumerable: originalDescriptor.enumerable,
+                configurable: true
+            });
+        }
+        // =====================================================================
+
         let photoData = [];
 
         function addPhotos() {
