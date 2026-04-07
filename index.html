@@ -1,1 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GSI Photo Log Generator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/docxtemplater/3.45.0/docxtemplater.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pizzip/3.1.4/pizzip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <style>
+        body { font-family: sans-serif; max-width: 800px; margin: 40px auto; line-height: 1.6; padding: 0 20px; }
+        .section { border: 1px solid #ddd; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+        .photo-entry { background: #f9f9f9; padding: 10px; margin-bottom: 10px; border-radius: 4px; }
+        button { background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+    </style>
+</head>
+<body>
 
+    <h1>Photo Log Generator</h1>
+    <p>Project: Nucor Steel Texas </p>
+
+    <div class="section">
+        <h3>1. Template</h3>
+        <p>Upload your <code>.docx</code> template (e.g., 10931_CAMU_Photo_Log_Template) </p>
+        <input type="file" id="template" accept=".docx">
+    </div>
+
+    <div class="section">
+        <h3>2. Upload Photos</h3>
+        <input type="file" id="photos" multiple accept="image/*" onchange="renderPhotoInputs()">
+        <div id="photo-list" style="margin-top: 20px;"></div>
+    </div>
+
+    <button onclick="generateDocument()">Generate & Download Log</button>
+
+    <script>
+        // Store images in an array to process later
+        let photoData = [];
+
+        function renderPhotoInputs() {
+            const files = document.getElementById('photos').files;
+            const container = document.getElementById('photo-list');
+            container.innerHTML = '';
+            photoData = [];
+
+            Array.from(files).forEach((file, index) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    photoData.push({ file: e.target.result, name: file.name });
+                    
+                    const div = document.createElement('div');
+                    div.className = 'photo-entry';
+                    div.innerHTML = `
+                        <strong>Photo ${index + 1}: ${file.name}</strong><br>
+                        <input type="text" placeholder="Description (e.g. Observed small patches...)" id="desc-${index}" style="width:70%">
+                        <select id="dir-${index}">
+                            <option value="north">North</option>
+                            <option value="south">South</option>
+                            <option value="east">East</option>
+                            <option value="west">West</option>
+                            <option value="downwards">Downwards</option>
+                        </select>
+                    `;
+                    container.appendChild(div);
+                };
+                reader.readAsArrayBuffer(file);
+            });
+        }
+
+        function generateDocument() {
+            const templateFile = document.getElementById('template').files[0];
+            if (!templateFile) return alert("Please upload a template first.");
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const content = e.target.result;
+                const zip = new PizZip(content);
+                const doc = new window.docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
+
+                // Map the inputs to template tags
+                const data = photoData.map((photo, i) => ({
+                    caption: document.getElementById(`desc-${i}`).value,
+                    direction: document.getElementById(`dir-${i}`).value
+                    // Note: Image insertion requires a specific docxtemplater image-module 
+                    // or base64 injection depending on your template setup.
+                }));
+
+                doc.render({ photos: data });
+
+                const out = doc.getZip().generate({
+                    type: "blob",
+                    mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                });
+                saveAs(out, "Generated_Photo_Log.docx");
+            };
+            reader.readAsArrayBuffer(templateFile);
+        }
+    </script>
+</body>
+</html>
