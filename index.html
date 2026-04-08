@@ -61,6 +61,7 @@
     <div class="card">
         <h3>1. Template Setup</h3>
         <p>Upload your <code>.docx</code> template file, then select which layout type it uses.</p>
+        <p style="font-size: 12px; color: #ef4444; margin-top: -10px;"><em>*Note: For the Single Photo Template, ensure your Word document margins are set to "Narrow" (0.5") so the massive 700x525 images fit!</em></p>
         <input type="file" id="template" accept=".docx">
         
         <select id="templateType" style="margin-top: 15px;">
@@ -132,13 +133,11 @@
             }
         }
 
-        // NEW FEATURE: Remove individual photos
         function removePhoto(idx) {
             photoData.splice(idx, 1);
             render();
         }
 
-        // UPDATED: Added thumbnail image and delete button to the HTML layout
         function render() {
             const container = document.getElementById('list');
             container.innerHTML = '';
@@ -181,7 +180,6 @@
                 return alert("Please upload both a Word template and at least one photo.");
             }
 
-            // Visual feedback: Disable button while generating
             const btn = document.getElementById('generateBtn');
             const originalText = btn.innerText;
             btn.disabled = true;
@@ -195,13 +193,14 @@
 
                     const templateType = document.getElementById('templateType').value;
 
+                    // UPDATED: Now uses 700x525 for the single photo layout
                     let imgDimensions = [700, 525]; 
                     if (templateType === 'grid') {
                         imgDimensions = [280, 210]; 
                     }
 
                     const imageOptions = {
-                        centered: true, 
+                        centered: false, // Prevents JavaScript from breaking Word's native centering
                         getImage: (v) => {
                             const bin = window.atob(v);
                             const res = new Uint8Array(bin.length);
@@ -253,7 +252,6 @@
                     console.error(err);
                     alert("Technical Error: " + err.message);
                 } finally {
-                    // Re-enable the button
                     btn.disabled = false;
                     btn.innerText = originalText;
                 }
